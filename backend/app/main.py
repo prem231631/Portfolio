@@ -2,6 +2,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers.projects import router as projects_router
+
 app = FastAPI(
     title="Developer Portfolio API",
     description="Backend API for my personal developer portfolio.",
@@ -18,6 +20,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(projects_router)
 
 
 @app.get("/")
