@@ -6,10 +6,10 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.db.session import Base
-
+import app.models
 # Import models here so Alembic can discover them.
 # We'll add model imports as we create them.
-
+target_metadata = Base.metadata
 config = context.config
 
 if config.config_file_name is not None:
