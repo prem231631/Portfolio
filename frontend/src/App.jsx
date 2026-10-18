@@ -4,8 +4,6 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  Github,
-  Linkedin,
   Mail,
   Menu,
   X,
@@ -13,6 +11,7 @@ import {
   Database,
   Layers3,
   Terminal,
+  ExternalLink,
 } from "lucide-react";
 import "./App.css";
 
@@ -559,7 +558,7 @@ function Contact() {
             rel="noreferrer"
             className="contact-link"
           >
-            <span className="contact-link-icon"><Github size={19} /></span>
+            <span className="contact-link-icon"><Code2 size={19} /></span>
             <span>
               <small>CODE & PROJECTS</small>
               <strong>GitHub</strong>
@@ -572,7 +571,7 @@ function Contact() {
             rel="noreferrer"
             className="contact-link"
           >
-            <span className="contact-link-icon"><Linkedin size={19} /></span>
+            <span className="contact-link-icon"><ExternalLink size={19} /></span>
             <span>
               <small>PROFESSIONAL NETWORK</small>
               <strong>LinkedIn</strong>
