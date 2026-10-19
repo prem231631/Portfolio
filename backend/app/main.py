@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.projects import router as projects_router
 from app.routers.auth import router as auth_router
-
+from app.routers.admin_projects import router as admin_projects_router
 app = FastAPI(
     title="Developer Portfolio API",
     description="Backend API for my personal developer portfolio.",
@@ -24,7 +24,7 @@ app.add_middleware(
 
 app.include_router(projects_router)
 app.include_router(auth_router)
-
+app.include_router(admin_projects_router)
 
 @app.get("/")
 def root():
