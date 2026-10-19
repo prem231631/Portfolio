@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowDownRight,
@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import "./App.css";
+import {getProjects} from "./api/projects";
 
 const projects = [
   {
