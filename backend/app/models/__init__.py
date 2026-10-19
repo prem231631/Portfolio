@@ -4,6 +4,7 @@ from app.models.experience import Experience
 from app.models.profile import Profile
 from app.models.project import Project
 from app.models.skill import Skill
+from app.models.admin_user import AdminUser
 
 __all__ = [
     "Education",
@@ -11,4 +12,5 @@ __all__ = [
     "Profile",
     "Project",
     "Skill",
+    "AdminUser",
 ]
