@@ -11,6 +11,9 @@ from app.db.session import get_db
 from app.models.admin_user import AdminUser
 from app.schemas.auth import TokenResponse
 
+from app.core.dependencies import get_current_admin
+from app.schemas.auth import AdminResponse
+
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
@@ -39,3 +42,10 @@ def admin_login(
     access_token = create_access_token(subject=str(admin.id))
 
     return TokenResponse(access_token=access_token)
+
+
+@router.get("/me", response_model=AdminResponse)
+def get_admin_profile(
+    current_admin: Annotated[AdminUser, Depends(get_current_admin)],
+) -> AdminUser:
+    return current_admin
