@@ -277,13 +277,41 @@ function SectionIntro({ eyebrow, title, description, number }) {
   );
 }
 
+
 function ProjectCard({ project, index }) {
+  const projectName = project.title.toLowerCase();
+  const isHimora = projectName.includes("himora");
+  const isEV =
+    projectName.includes("ev") ||
+    projectName.includes("charging");
+  const isNepse =
+    projectName.includes("nepse") ||
+    project.category.toLowerCase().includes("financial");
+
   return (
     <Reveal delay={index * 0.08} className="project-card">
       <a
-        className={`project-visual ${project.className}`}
-        href="#contact"
-        aria-label={`Discuss the ${project.title} project`}
+        className={`project-visual ${
+          isHimora
+            ? "project-visual-himora"
+            : isEV
+              ? "project-visual-ev"
+              : isNepse
+                ? "project-visual-nepse"
+                : ""
+        }`}
+        href={project.live_url || project.repository_url || "#contact"}
+        target={
+          project.live_url || project.repository_url
+            ? "_blank"
+            : undefined
+        }
+        rel={
+          project.live_url || project.repository_url
+            ? "noreferrer"
+            : undefined
+        }
+        aria-label={`View ${project.title}`}
       >
         <div className="visual-topline">
           <span>SELECTED PROJECT / {project.number}</span>
@@ -291,7 +319,7 @@ function ProjectCard({ project, index }) {
         </div>
 
         <div className="visual-artwork">
-          {project.number === "01" && (
+          {isHimora ? (
             <>
               <div className="himora-orbit" />
               <div className="himora-product">
@@ -303,9 +331,7 @@ function ProjectCard({ project, index }) {
               </div>
               <span className="visual-caption">H / COLLECTION 001</span>
             </>
-          )}
-
-          {project.number === "02" && (
+          ) : isEV ? (
             <>
               <div className="ev-grid" />
               <div className="ev-orbit ev-orbit-outer" />
@@ -313,13 +339,15 @@ function ProjectCard({ project, index }) {
               <div className="ev-core">
                 <span>EV</span>
                 <span className="ev-core-line" />
-                <span className="ev-core-caption">CHARGING NETWORK</span>
+                <span className="ev-core-caption">
+                  CHARGING NETWORK
+                </span>
               </div>
-              <span className="visual-caption">ENERGY / CONNECTED</span>
+              <span className="visual-caption">
+                ENERGY / CONNECTED
+              </span>
             </>
-          )}
-
-          {project.number === "03" && (
+          ) : isNepse ? (
             <>
               <div className="market-grid" />
               <svg
@@ -329,14 +357,28 @@ function ProjectCard({ project, index }) {
                 aria-label="Abstract stock-market trend illustration"
               >
                 <defs>
-                  <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#b8f36b" stopOpacity=".26" />
-                    <stop offset="100%" stopColor="#b8f36b" stopOpacity="0" />
+                  <linearGradient
+                    id={`chartFill-${project.id}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="0%"
+                      stopColor="#b8f36b"
+                      stopOpacity=".26"
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="#b8f36b"
+                      stopOpacity="0"
+                    />
                   </linearGradient>
                 </defs>
                 <path
                   d="M0 152 L32 132 L61 143 L95 95 L121 112 L157 69 L186 88 L220 45 L251 67 L286 27 L320 43 L360 8 L360 190 L0 190 Z"
-                  fill="url(#chartFill)"
+                  fill={`url(#chartFill-${project.id})`}
                 />
                 <path
                   d="M0 152 L32 132 L61 143 L95 95 L121 112 L157 69 L186 88 L220 45 L251 67 L286 27 L320 43 L360 8"
@@ -346,14 +388,24 @@ function ProjectCard({ project, index }) {
                 />
                 <circle cx="360" cy="8" r="4" fill="#b8f36b" />
               </svg>
-              <span className="visual-caption">MARKET INSIGHT / 001</span>
+              <span className="visual-caption">
+                MARKET INSIGHT / 001
+              </span>
             </>
+          ) : (
+            <div className="generic-project-visual">
+              <span>{project.number}</span>
+              <Code2 size={44} strokeWidth={1} />
+              <small>DESIGNED & ENGINEERED</small>
+            </div>
           )}
         </div>
 
         <div className="visual-bottomline">
           <span>{project.status}</span>
-          <span>VIEW CASE STUDY <ArrowUpRight size={12} /></span>
+          <span>
+            VIEW PROJECT <ArrowUpRight size={12} />
+          </span>
         </div>
       </a>
 
