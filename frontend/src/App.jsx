@@ -374,28 +374,101 @@ function ProjectCard({ project, index }) {
   );
 }
 
+
 function Work() {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProjects() {
+      try {
+        const data = await getProjects();
+
+        if (!cancelled) {
+          setProjects(Array.isArray(data) ? data : []);
+          setError("");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            "Unable to load projects right now. Please try again later."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="section work-section" id="work">
       <div className="container">
         <Reveal>
           <SectionIntro
             eyebrow="A selection of my work"
-            title={<>Ideas turned into <span>applications.</span></>}
+            title={
+              <>
+                Ideas turned into <span>applications.</span>
+              </>
+            }
             description="A selection of academic and personal projects exploring full-stack development, user experience, and practical problem-solving."
             number="01 / WORK"
           />
         </Reveal>
 
-        <div className="project-grid">
-          {projects.map((project, index) => (
-            <ProjectCard key={project.number} project={project} index={index} />
-          ))}
-        </div>
+        {loading ? (
+          <p role="status" className="section-description">
+            Loading projects…
+          </p>
+        ) : error ? (
+          <p role="alert" className="section-description">
+            {error}
+          </p>
+        ) : projects.length === 0 ? (
+          <p className="section-description">
+            Projects are being prepared. Please check back soon.
+          </p>
+        ) : (
+          <div className="project-grid">
+            {projects.map((project, index) => (
+              <ProjectCard
+                key={project.id}
+                project={{
+                  ...project,
+                  number: String(index + 1).padStart(2, "0"),
+                  category: (project.category || "PROJECT").toUpperCase(),
+                  title: project.title,
+                  description: project.short_description,
+                  stack: project.technologies || [],
+                  className: "",
+                  status: project.featured
+                    ? "FEATURED PROJECT"
+                    : "SELECTED PROJECT",
+                }}
+                index={index}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="work-footer">
           <span>MORE PROJECTS WILL BE ADDED OVER TIME.</span>
-          <a href="https://github.com/" target="_blank" rel="noreferrer">
+          <a
+            href="https://github.com/prem231631"
+            target="_blank"
+            rel="noreferrer"
+          >
             Explore GitHub <ArrowUpRight size={15} />
           </a>
         </div>
@@ -403,6 +476,7 @@ function Work() {
     </section>
   );
 }
+
 
 function About() {
   return (
