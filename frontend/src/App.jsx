@@ -14,7 +14,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import "./App.css";
-import {getProjects} from "./api/projects";
+import {getProjects} from "./services/api";
 
 const projects = [
   {
@@ -278,6 +278,7 @@ function SectionIntro({ eyebrow, title, description, number }) {
 }
 
 
+
 function ProjectCard({ project, index }) {
   const projectName = project.title.toLowerCase();
   const isHimora = projectName.includes("himora");
@@ -286,7 +287,9 @@ function ProjectCard({ project, index }) {
     projectName.includes("charging");
   const isNepse =
     projectName.includes("nepse") ||
-    project.category.toLowerCase().includes("financial");
+    (project.category || "").toLowerCase().includes("financial");
+
+  const projectUrl = project.live_url || project.repository_url;
 
   return (
     <Reveal delay={index * 0.08} className="project-card">
@@ -300,17 +303,9 @@ function ProjectCard({ project, index }) {
                 ? "project-visual-nepse"
                 : ""
         }`}
-        href={project.live_url || project.repository_url || "#contact"}
-        target={
-          project.live_url || project.repository_url
-            ? "_blank"
-            : undefined
-        }
-        rel={
-          project.live_url || project.repository_url
-            ? "noreferrer"
-            : undefined
-        }
+        href={projectUrl || "#contact"}
+        target={projectUrl ? "_blank" : undefined}
+        rel={projectUrl ? "noreferrer" : undefined}
         aria-label={`View ${project.title}`}
       >
         <div className="visual-topline">
@@ -414,12 +409,39 @@ function ProjectCard({ project, index }) {
           <span>{project.category}</span>
           <span>{project.number}</span>
         </div>
+
         <h3>{project.title}</h3>
         <p>{project.description}</p>
+
         <div className="project-stack">
-          {project.stack.map((item) => (
+          {(project.stack || []).map((item) => (
             <span key={item}>{item}</span>
           ))}
+        </div>
+
+        <div className="project-actions">
+          {project.live_url && (
+            <a
+              href={project.live_url}
+              target="_blank"
+              rel="noreferrer"
+              className="project-action project-action-primary"
+            >
+              Live Demo <ArrowUpRight size={15} />
+            </a>
+          )}
+
+          {project.repository_url && (
+            <a
+              href={project.repository_url}
+              target="_blank"
+              rel="noreferrer"
+              className="project-action"
+            >
+              <Code2 size={15} /> Source Code
+              <ArrowUpRight size={14} />
+            </a>
+          )}
         </div>
       </div>
     </Reveal>
