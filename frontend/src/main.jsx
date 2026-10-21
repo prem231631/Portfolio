@@ -14,6 +14,8 @@ import { AdminAuthProvider } from "./admin/AdminAuth";
 import ProtectedAdminRoute from "./admin/components/ProtectedAdminRoute";
 import AdminLogin from "./admin/pages/AdminLogin";
 import AdminDashboard from "./admin/pages/AdminDashboard";
+import AdminProjects from "./admin/pages/AdminProjects.jsx";
+
 
 function ApplicationRoutes() {
   return (
@@ -24,6 +26,7 @@ function ApplicationRoutes() {
 
       <Route element={<ProtectedAdminRoute />}>
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/projects" element={<AdminProjects />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
