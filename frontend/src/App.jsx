@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowDownRight,
@@ -12,45 +13,11 @@ import {
   Layers3,
   Terminal,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
-import "./App.css";
-import {getProjects} from "./services/api";
 
-const projects = [
-  {
-    number: "01",
-    category: "E-COMMERCE · FULL STACK",
-    title: "HIMORA LIFESTYLE",
-    description:
-      "A premium lifestyle e-commerce experience inspired by the Himalayas, with product discovery, customer accounts, cart management, and order workflows.",
-    stack: ["React", "FastAPI", "PostgreSQL", "Docker"],
-    className: "project-visual-himora",
-    visual: "H",
-    status: "IN DEVELOPMENT",
-  },
-  {
-    number: "02",
-    category: "CLEAN TECHNOLOGY · FULL STACK",
-    title: "EV CHARGING STATION",
-    description:
-      "A platform for discovering electric vehicle charging stations, managing user accounts, and coordinating charging bookings.",
-    stack: ["React", "FastAPI", "PostgreSQL"],
-    className: "project-visual-ev",
-    visual: "EV",
-    status: "IN DEVELOPMENT",
-  },
-  {
-    number: "03",
-    category: "FINANCIAL TECHNOLOGY · AI",
-    title: "NEPSE AI",
-    description:
-      "A stock-market research and prediction platform designed to help beginners explore market trends, indicators, news sentiment, and watchlists.",
-    stack: ["React", "FastAPI", "PostgreSQL", "ML"],
-    className: "project-visual-nepse",
-    visual: "N",
-    status: "ACADEMIC PROJECT",
-  },
-];
+import "./App.css";
+import { getProjects } from "./services/api";
 
 const capabilities = [
   {
@@ -109,7 +76,11 @@ function Reveal({ children, delay = 0, className = "" }) {
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{
+        duration: 0.65,
+        delay,
+        ease: [0.22, 1, 0.36, 1],
+      }}
     >
       {children}
     </motion.div>
@@ -142,12 +113,20 @@ function Navbar() {
           </span>
         </a>
 
-        <nav className={`nav-links ${menuOpen ? "nav-links-open" : ""}`}>
+        <nav
+          className={`nav-links ${menuOpen ? "nav-links-open" : ""}`}
+          aria-label="Main navigation"
+        >
           {links.map(([label, href]) => (
-            <a key={label} href={href} onClick={() => setMenuOpen(false)}>
+            <a
+              key={label}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+            >
               {label}
             </a>
           ))}
+
           <a
             className="nav-contact"
             href="#contact"
@@ -205,6 +184,7 @@ function Hero() {
             <a href="#work" className="button-primary">
               Explore my work <ArrowDownRight size={17} />
             </a>
+
             <a href="#contact" className="button-secondary">
               Get in touch <ArrowUpRight size={16} />
             </a>
@@ -215,7 +195,7 @@ function Hero() {
           <div className="hero-footnote">
             <span>BASED IN NEPAL</span>
             <span className="footnote-divider" />
-            <span>AVAILABLE FOR LEARNING & COLLABORATION</span>
+            <span>AVAILABLE FOR LEARNING &amp; COLLABORATION</span>
           </div>
         </Reveal>
       </div>
@@ -254,7 +234,11 @@ function Hero() {
         </div>
       </Reveal>
 
-      <a href="#work" className="hero-scroll" aria-label="Scroll to selected work">
+      <a
+        href="#work"
+        className="hero-scroll"
+        aria-label="Scroll to selected work"
+      >
         <span>SCROLL TO EXPLORE</span>
         <ArrowDownRight size={15} />
       </a>
@@ -269,27 +253,46 @@ function SectionIntro({ eyebrow, title, description, number }) {
         <span className="eyebrow">{eyebrow}</span>
         <h2 className="section-heading">{title}</h2>
       </div>
+
       <div className="section-intro-aside">
         <span className="section-number">{number}</span>
-        {description && <p className="section-description">{description}</p>}
+        {description && (
+          <p className="section-description">{description}</p>
+        )}
       </div>
     </div>
   );
 }
 
-
-
 function ProjectCard({ project, index }) {
-  const projectName = project.title.toLowerCase();
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+
+  const projectName = (project.title || "").toLowerCase();
+  const category = (project.category || "").toLowerCase();
+
   const isHimora = projectName.includes("himora");
   const isEV =
     projectName.includes("ev") ||
     projectName.includes("charging");
   const isNepse =
     projectName.includes("nepse") ||
-    (project.category || "").toLowerCase().includes("financial");
+    category.includes("financial");
 
-  const projectUrl = project.live_url || project.repository_url;
+  const thumbnailUrl = project.thumbnail_url?.trim();
+  const hasThumbnail = Boolean(thumbnailUrl) && !thumbnailFailed;
+
+  const liveUrl = project.live_url?.trim();
+  const repositoryUrl = project.repository_url?.trim();
+  const projectUrl = liveUrl || repositoryUrl;
+
+  const projectNumber = String(index + 1).padStart(2, "0");
+  const projectCategory = (project.category || "PROJECT").toUpperCase();
+  const projectDescription =
+    project.short_description || project.description || "";
+
+  const projectTechnologies = Array.isArray(project.technologies)
+    ? project.technologies
+    : [];
 
   return (
     <Reveal delay={index * 0.08} className="project-card">
@@ -309,12 +312,26 @@ function ProjectCard({ project, index }) {
         aria-label={`View ${project.title}`}
       >
         <div className="visual-topline">
-          <span>SELECTED PROJECT / {project.number}</span>
+          <span>SELECTED PROJECT / {projectNumber}</span>
           <ArrowUpRight size={18} />
         </div>
 
         <div className="visual-artwork">
-          {isHimora ? (
+          {hasThumbnail ? (
+            <img
+              src={thumbnailUrl}
+              alt={`${project.title} project preview`}
+              loading="lazy"
+              onError={() => setThumbnailFailed(true)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : isHimora ? (
             <>
               <div className="himora-orbit" />
               <div className="himora-product">
@@ -331,20 +348,19 @@ function ProjectCard({ project, index }) {
               <div className="ev-grid" />
               <div className="ev-orbit ev-orbit-outer" />
               <div className="ev-orbit ev-orbit-inner" />
+
               <div className="ev-core">
                 <span>EV</span>
                 <span className="ev-core-line" />
-                <span className="ev-core-caption">
-                  CHARGING NETWORK
-                </span>
+                <span className="ev-core-caption">CHARGING NETWORK</span>
               </div>
-              <span className="visual-caption">
-                ENERGY / CONNECTED
-              </span>
+
+              <span className="visual-caption">ENERGY / CONNECTED</span>
             </>
           ) : isNepse ? (
             <>
               <div className="market-grid" />
+
               <svg
                 className="market-chart"
                 viewBox="0 0 360 190"
@@ -353,7 +369,7 @@ function ProjectCard({ project, index }) {
               >
                 <defs>
                   <linearGradient
-                    id={`chartFill-${project.id}`}
+                    id={`chartFill-${project.id ?? projectNumber}`}
                     x1="0"
                     y1="0"
                     x2="0"
@@ -371,119 +387,132 @@ function ProjectCard({ project, index }) {
                     />
                   </linearGradient>
                 </defs>
+
                 <path
                   d="M0 152 L32 132 L61 143 L95 95 L121 112 L157 69 L186 88 L220 45 L251 67 L286 27 L320 43 L360 8 L360 190 L0 190 Z"
-                  fill={`url(#chartFill-${project.id})`}
+                  fill={`url(#chartFill-${project.id ?? projectNumber})`}
                 />
+
                 <path
                   d="M0 152 L32 132 L61 143 L95 95 L121 112 L157 69 L186 88 L220 45 L251 67 L286 27 L320 43 L360 8"
                   fill="none"
                   stroke="#b8f36b"
                   strokeWidth="2"
                 />
+
                 <circle cx="360" cy="8" r="4" fill="#b8f36b" />
               </svg>
-              <span className="visual-caption">
-                MARKET INSIGHT / 001
-              </span>
+
+              <span className="visual-caption">MARKET INSIGHT / 001</span>
             </>
           ) : (
             <div className="generic-project-visual">
-              <span>{project.number}</span>
+              <span>{projectNumber}</span>
               <Code2 size={44} strokeWidth={1} />
-              <small>DESIGNED & ENGINEERED</small>
+              <small>DESIGNED &amp; ENGINEERED</small>
             </div>
           )}
         </div>
 
         <div className="visual-bottomline">
-          <span>{project.status}</span>
           <span>
-            VIEW PROJECT <ArrowUpRight size={12} />
+            {project.featured ? "FEATURED PROJECT" : "SELECTED PROJECT"}
+          </span>
+
+          <span>
+            {projectUrl ? "VIEW PROJECT" : "PROJECT OVERVIEW"}
+            <ArrowUpRight size={12} />
           </span>
         </div>
       </a>
 
       <div className="project-info">
         <div className="project-meta">
-          <span>{project.category}</span>
-          <span>{project.number}</span>
+          <span>{projectCategory}</span>
+          <span>{projectNumber}</span>
         </div>
 
         <h3>{project.title}</h3>
-        <p>{project.description}</p>
 
-        <div className="project-stack">
-          {(project.stack || []).map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
+        <p>{projectDescription}</p>
 
-        <div className="project-actions">
-          {project.live_url && (
-            <a
-              href={project.live_url}
-              target="_blank"
-              rel="noreferrer"
-              className="project-action project-action-primary"
-            >
-              Live Demo <ArrowUpRight size={15} />
-            </a>
-          )}
+        {projectTechnologies.length > 0 && (
+          <div className="project-stack">
+            {projectTechnologies.map((technology, technologyIndex) => (
+              <span key={`${technology}-${technologyIndex}`}>
+                {technology}
+              </span>
+            ))}
+          </div>
+        )}
 
-          {project.repository_url && (
-            <a
-              href={project.repository_url}
-              target="_blank"
-              rel="noreferrer"
-              className="project-action"
-            >
-              <Code2 size={15} /> Source Code
-              <ArrowUpRight size={14} />
-            </a>
-          )}
-        </div>
+        {(liveUrl || repositoryUrl) && (
+          <div className="project-actions">
+            {liveUrl && (
+              <a
+                href={liveUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="project-action project-action-primary"
+              >
+                Live Demo <ArrowUpRight size={15} />
+              </a>
+            )}
+
+            {repositoryUrl && (
+              <a
+                href={repositoryUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="project-action"
+              >
+                <Code2 size={15} />
+                Source Code
+                <ArrowUpRight size={14} />
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </Reveal>
   );
 }
 
-
 function Work() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
+
+  const loadProjects = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await getProjects();
+
+      const publishedProjects = Array.isArray(data)
+        ? data.filter((project) => project.published !== false)
+        : [];
+
+      publishedProjects.sort(
+        (first, second) =>
+          (first.display_order ?? 0) - (second.display_order ?? 0)
+      );
+
+      setProjects(publishedProjects);
+    } catch {
+      setError(
+        "Unable to load projects right now. Check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadProjects() {
-      try {
-        const data = await getProjects();
-
-        if (!cancelled) {
-          setProjects(Array.isArray(data) ? data : []);
-          setError("");
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            "Unable to load projects right now. Please try again later."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
     loadProjects();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [loadProjects, retryCount]);
 
   return (
     <section className="section work-section" id="work">
@@ -506,9 +535,18 @@ function Work() {
             Loading projects…
           </p>
         ) : error ? (
-          <p role="alert" className="section-description">
-            {error}
-          </p>
+          <div className="section-description" role="alert">
+            <p>{error}</p>
+
+            <button
+              type="button"
+              className="project-action"
+              onClick={() => setRetryCount((count) => count + 1)}
+            >
+              <RefreshCw size={15} />
+              Try again
+            </button>
+          </div>
         ) : projects.length === 0 ? (
           <p className="section-description">
             Projects are being prepared. Please check back soon.
@@ -517,19 +555,8 @@ function Work() {
           <div className="project-grid">
             {projects.map((project, index) => (
               <ProjectCard
-                key={project.id}
-                project={{
-                  ...project,
-                  number: String(index + 1).padStart(2, "0"),
-                  category: (project.category || "PROJECT").toUpperCase(),
-                  title: project.title,
-                  description: project.short_description,
-                  stack: project.technologies || [],
-                  className: "",
-                  status: project.featured
-                    ? "FEATURED PROJECT"
-                    : "SELECTED PROJECT",
-                }}
+                key={project.id ?? project.slug}
+                project={project}
                 index={index}
               />
             ))}
@@ -538,6 +565,7 @@ function Work() {
 
         <div className="work-footer">
           <span>MORE PROJECTS WILL BE ADDED OVER TIME.</span>
+
           <a
             href="https://github.com/prem231631"
             target="_blank"
@@ -551,13 +579,13 @@ function Work() {
   );
 }
 
-
 function About() {
   return (
     <section className="section about-section" id="about">
       <div className="container about-layout">
         <Reveal className="about-left">
           <span className="eyebrow">A little about me</span>
+
           <h2 className="section-heading">
             Curious by nature.
             <br />
@@ -594,11 +622,14 @@ function About() {
             <div className="education-icon">
               <Layers3 size={20} />
             </div>
+
             <div>
               <span className="education-label">EDUCATION</span>
               <h3>Bachelor's in Software Engineering</h3>
               <p>NCIT · Pokhara University</p>
-              <span className="education-period">EXPECTED GRADUATION · 2027</span>
+              <span className="education-period">
+                EXPECTED GRADUATION · 2027
+              </span>
             </div>
           </div>
 
@@ -618,7 +649,11 @@ function Expertise() {
         <Reveal>
           <SectionIntro
             eyebrow="What I'm developing"
-            title={<>My approach to <span>building.</span></>}
+            title={
+              <>
+                My approach to <span>building.</span>
+              </>
+            }
             description="A growing toolkit shaped by practical development, experimentation, and a willingness to learn."
             number="02 / EXPERTISE"
           />
@@ -631,16 +666,26 @@ function Expertise() {
             return (
               <Reveal key={capability.number} delay={index * 0.05}>
                 <article className="capability-row">
-                 <span className="capability-number">{capability.number}</span>
+                  <span className="capability-number">
+                    {capability.number}
+                  </span>
+
                   <div className="capability-icon">
                     <Icon size={22} strokeWidth={1.5} />
                   </div>
+
                   <div className="capability-main">
                     <h3>{capability.title}</h3>
                     <p>{capability.description}</p>
-                    <span className="capability-tools">{capability.tools}</span>
+                    <span className="capability-tools">
+                      {capability.tools}
+                    </span>
                   </div>
-                  <ArrowUpRight className="capability-arrow" size={20} />
+
+                  <ArrowUpRight
+                    className="capability-arrow"
+                    size={20}
+                  />
                 </article>
               </Reveal>
             );
@@ -652,6 +697,7 @@ function Expertise() {
             <span className="eyebrow">Tools in my workflow</span>
             <span className="technology-count">12 TECHNOLOGIES</span>
           </div>
+
           <div className="technology-list">
             {technologies.map((technology) => (
               <span className="technology-chip" key={technology}>
@@ -660,6 +706,7 @@ function Expertise() {
               </span>
             ))}
           </div>
+
           <p className="technology-note">
             A growing toolkit—not a claim of mastery in every technology.
           </p>
@@ -675,6 +722,7 @@ function Contact() {
       <div className="container contact-layout">
         <Reveal className="contact-copy">
           <span className="eyebrow">Have something in mind?</span>
+
           <h2>
             Good things
             <br />
@@ -682,55 +730,77 @@ function Contact() {
             <br />
             <span>conversation.</span>
           </h2>
+
           <p>
             Have an idea, a project to discuss, or an opportunity to learn
             together? I'd be happy to hear from you.
           </p>
-          <a className="button-primary contact-button" href="mailto:hello@example.com">
-            <Mail size={17} /> Say hello <ArrowUpRight size={16} />
+
+          <a
+            className="button-primary contact-button"
+            href="mailto:hello@example.com"
+          >
+            <Mail size={17} />
+            Say hello
+            <ArrowUpRight size={16} />
           </a>
         </Reveal>
 
         <Reveal delay={0.12} className="contact-card">
           <span className="contact-card-label">OPEN CHANNELS</span>
+
           <a href="mailto:hello@example.com" className="contact-link">
-            <span className="contact-link-icon"><Mail size={19} /></span>
+            <span className="contact-link-icon">
+              <Mail size={19} />
+            </span>
+
             <span>
               <small>EMAIL</small>
               <strong>hello@example.com</strong>
             </span>
+
             <ArrowUpRight size={17} />
           </a>
+
           <a
-            href="https://github.com/"
+            href="https://github.com/prem231631"
             target="_blank"
             rel="noreferrer"
             className="contact-link"
           >
-            <span className="contact-link-icon"><Code2 size={19} /></span>
+            <span className="contact-link-icon">
+              <Code2 size={19} />
+            </span>
+
             <span>
-              <small>CODE & PROJECTS</small>
+              <small>CODE &amp; PROJECTS</small>
               <strong>GitHub</strong>
             </span>
+
             <ArrowUpRight size={17} />
           </a>
+
           <a
             href="https://www.linkedin.com/"
             target="_blank"
             rel="noreferrer"
             className="contact-link"
           >
-            <span className="contact-link-icon"><ExternalLink size={19} /></span>
+            <span className="contact-link-icon">
+              <ExternalLink size={19} />
+            </span>
+
             <span>
               <small>PROFESSIONAL NETWORK</small>
               <strong>LinkedIn</strong>
             </span>
+
             <ArrowUpRight size={17} />
           </a>
 
           <div className="contact-availability">
             <span className="status-dot" />
-            OPEN TO LEARNING & COLLABORATION
+            OPEN TO LEARNING &amp; COLLABORATION
           </div>
         </Reveal>
       </div>
@@ -742,11 +812,16 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="container footer-inner">
-        <a className="footer-brand" href="#home">P.</a>
+        <a className="footer-brand" href="#home">
+          P.
+        </a>
+
         <span>DESIGNED WITH INTENTION. BUILT WITH CURIOSITY.</span>
+
         <a href="#home" className="back-to-top">
           BACK TO TOP <ArrowUpRight size={13} />
         </a>
+
         <span className="footer-copyright">© 2026</span>
       </div>
     </footer>
@@ -757,6 +832,7 @@ export default function App() {
   return (
     <div className="site-shell">
       <Navbar />
+
       <main>
         <Hero />
         <Work />
@@ -764,6 +840,7 @@ export default function App() {
         <Expertise />
         <Contact />
       </main>
+
       <Footer />
     </div>
   );
