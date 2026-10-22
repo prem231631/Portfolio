@@ -13,8 +13,9 @@ import {
   ShieldCheck,
   Star,
 } from "lucide-react";
-import { getAdminProjects } from "../../services/api";
+
 import { useAdminAuth } from "../AdminAuth";
+import { getAdminProjects } from "../../services/api";
 import "./admin-dashboard.css";
 
 export default function AdminDashboard() {
@@ -52,9 +53,38 @@ export default function AdminDashboard() {
     (project) => project.published
   ).length;
 
+  const draftCount = projects.length - publishedCount;
+
   const featuredCount = projects.filter(
     (project) => project.featured
   ).length;
+
+  const stats = [
+    {
+      label: "Total projects",
+      value: projects.length,
+      description: "Projects in your database",
+      icon: FolderKanban,
+    },
+    {
+      label: "Published",
+      value: publishedCount,
+      description: "Visible on your public portfolio",
+      icon: Globe,
+    },
+    {
+      label: "Drafts",
+      value: draftCount,
+      description: "Not visible on your public portfolio",
+      icon: ArrowDownRight,
+    },
+    {
+      label: "Featured",
+      value: featuredCount,
+      description: "Marked as featured projects",
+      icon: Star,
+    },
+  ];
 
   return (
     <main className="admin-dashboard">
@@ -69,8 +99,12 @@ export default function AdminDashboard() {
 
         <div className="dashboard-nav-label">WORKSPACE</div>
 
-        <nav className="dashboard-nav">
-          <Link to="/admin" className="dashboard-nav-link active">
+        <nav className="dashboard-nav" aria-label="Admin navigation">
+          <Link
+            to="/admin"
+            className="dashboard-nav-link active"
+            aria-current="page"
+          >
             <FolderKanban size={17} />
             <span>Overview</span>
           </Link>
@@ -78,7 +112,9 @@ export default function AdminDashboard() {
           <Link to="/admin/projects" className="dashboard-nav-link">
             <Globe size={17} />
             <span>Projects</span>
-            <span className="dashboard-nav-count">{projects.length}</span>
+            <span className="dashboard-nav-count">
+              {loading ? "—" : projects.length}
+            </span>
           </Link>
         </nav>
 
@@ -87,6 +123,7 @@ export default function AdminDashboard() {
             <div className="dashboard-avatar">
               {(admin?.email?.[0] || "A").toUpperCase()}
             </div>
+
             <div className="dashboard-admin-details">
               <strong>Administrator</strong>
               <span>{admin?.email || "Signed in"}</span>
@@ -132,11 +169,17 @@ export default function AdminDashboard() {
         <div className="dashboard-content">
           <section className="dashboard-welcome">
             <div>
-              <p className="dashboard-eyebrow">YOUR WORKSPACE / 01</p>
-              <h1>Good to have you <span>back.</span></h1>
+              <p className="dashboard-eyebrow">
+                YOUR WORKSPACE / 01
+              </p>
+
+              <h1>
+                Good to have you <span>back.</span>
+              </h1>
+
               <p className="dashboard-welcome-description">
-                Manage your work, control what visitors see, and keep your
-                portfolio current.
+                Manage your work, control what visitors see, and keep
+                your portfolio current.
               </p>
             </div>
 
@@ -153,45 +196,49 @@ export default function AdminDashboard() {
           {error && (
             <div className="dashboard-error" role="alert">
               <span>{error}</span>
-              <button type="button" onClick={loadProjects}>
+              <button
+                type="button"
+                onClick={loadProjects}
+                disabled={loading}
+              >
                 Try again
               </button>
             </div>
           )}
 
-          <section className="dashboard-stats">
-            <article className="dashboard-stat-card">
-              <div className="dashboard-stat-top">
-                <span>Total projects</span>
-                <FolderKanban size={18} />
-              </div>
-              <strong>{loading ? "—" : projects.length}</strong>
-              <p>Projects in your database</p>
-            </article>
+          <section
+            className="dashboard-stats"
+            aria-label="Project statistics"
+          >
+            {stats.map((stat) => {
+              const Icon = stat.icon;
 
-            <article className="dashboard-stat-card">
-              <div className="dashboard-stat-top">
-                <span>Published</span>
-                <Globe size={18} />
-              </div>
-              <strong>{loading ? "—" : publishedCount}</strong>
-              <p>Visible on your public portfolio</p>
-            </article>
+              return (
+                <article
+                  className="dashboard-stat-card"
+                  key={stat.label}
+                >
+                  <div className="dashboard-stat-top">
+                    <span>{stat.label}</span>
+                    <Icon size={18} aria-hidden="true" />
+                  </div>
 
-            <article className="dashboard-stat-card">
-              <div className="dashboard-stat-top">
-                <span>Featured</span>
-                <Star size={18} />
-              </div>
-              <strong>{loading ? "—" : featuredCount}</strong>
-              <p>Marked as featured projects</p>
-            </article>
+                  <strong>
+                    {loading ? "—" : stat.value}
+                  </strong>
+
+                  <p>{stat.description}</p>
+                </article>
+              );
+            })}
           </section>
 
           <section className="dashboard-project-section">
             <div className="dashboard-section-heading">
               <div>
-                <p className="dashboard-eyebrow">CONTENT MANAGEMENT</p>
+                <p className="dashboard-eyebrow">
+                  CONTENT MANAGEMENT
+                </p>
                 <h2>Your projects</h2>
               </div>
 
@@ -201,14 +248,20 @@ export default function AdminDashboard() {
                 onClick={loadProjects}
                 disabled={loading}
               >
-                <RefreshCw size={15} />
+                <RefreshCw
+                  size={15}
+                  className={loading ? "dashboard-refreshing" : ""}
+                />
                 Refresh
               </button>
             </div>
 
             <div className="dashboard-project-list">
               {loading ? (
-                <div className="dashboard-empty-state">
+                <div
+                  className="dashboard-empty-state"
+                  role="status"
+                >
                   <span className="admin-spinner" />
                   <p>Loading your projects...</p>
                 </div>
@@ -216,7 +269,10 @@ export default function AdminDashboard() {
                 <div className="dashboard-empty-state">
                   <FolderKanban size={25} />
                   <h3>No projects yet</h3>
-                  <p>Your new projects will appear here.</p>
+                  <p>
+                    Create your first project to start building
+                    your portfolio.
+                  </p>
                   <Link to="/admin/projects/new">
                     Create your first project
                   </Link>
@@ -259,7 +315,9 @@ export default function AdminDashboard() {
                     </div>
 
                     <Link
-                      to={`/admin/projects/${encodeURIComponent(project.slug)}/edit`}
+                      to={`/admin/projects/${encodeURIComponent(
+                        project.slug
+                      )}/edit`}
                       className="dashboard-edit-link"
                       aria-label={`Edit ${project.title}`}
                     >
