@@ -7,6 +7,8 @@ import {
   CheckCircle2,
   CirclePlus,
   ExternalLink,
+  Eye,
+  EyeOff,
   FolderKanban,
   Pencil,
   RefreshCw,
@@ -17,7 +19,11 @@ import {
 } from "lucide-react";
 
 import { useAdminAuth } from "../AdminAuth";
-import { deleteProject, getAdminProjects } from "../../services/api";
+import {
+  deleteProject,
+  getAdminProjects,
+  updateProject,
+} from "../../services/api";
 import "./admin-projects.css";
 
 const FILTERS = [
@@ -37,6 +43,7 @@ export default function AdminProjects() {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [deletingSlug, setDeletingSlug] = useState(null);
+  const [updatingKey, setUpdatingKey] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState(
     () => location.state?.notice || ""
@@ -62,9 +69,6 @@ export default function AdminProjects() {
     loadProjects();
   }, [loadProjects]);
 
-  // Display success messages passed from the create/edit form.
-  // Clear the history state to prevent the same message returning
-  // when the projects page is refreshed.
   useEffect(() => {
     const message = location.state?.notice;
 
@@ -101,7 +105,51 @@ export default function AdminProjects() {
     });
   }, [projects, search, filter]);
 
+  async function handleQuickUpdate(project, field) {
+    if (!token || updatingKey || deletingSlug) return;
+
+    const nextValue = !project[field];
+    const actionKey = `${project.slug}:${field}`;
+
+    setUpdatingKey(actionKey);
+    setError("");
+    setNotice("");
+
+    try {
+      const updatedProject = await updateProject(
+        token,
+        project.slug,
+        { [field]: nextValue }
+      );
+
+      setProjects((current) =>
+        current.map((item) =>
+          item.slug === project.slug
+            ? { ...item, ...updatedProject }
+            : item
+        )
+      );
+
+      const actionLabel =
+        field === "published"
+          ? nextValue
+            ? "published"
+            : "moved to drafts"
+          : nextValue
+            ? "marked as featured"
+            : "removed from featured";
+
+      setNotice(`"${project.title}" was ${actionLabel} successfully.`);
+    } catch (err) {
+      setError(err.message || "Unable to update this project.");
+    } finally {
+      setUpdatingKey(null);
+    }
+  }
+
   async function handleDelete(project) {
+    if (updatingKey || deletingSlug) return;
+
     const confirmed = window.confirm(
       `Delete "${project.title}" permanently? This action cannot be undone.`
     );
@@ -254,7 +302,7 @@ export default function AdminProjects() {
                 setNotice("");
                 loadProjects();
               }}
-              disabled={loading}
+              disabled={loading || Boolean(updatingKey) || Boolean(deletingSlug)}
               aria-label="Refresh projects"
               title="Refresh projects"
             >
@@ -326,111 +374,190 @@ export default function AdminProjects() {
                 </thead>
 
                 <tbody>
-                  {filteredProjects.map((project) => (
-                    <tr key={project.id}>
-                      <td>
-                        <div className="projects-name-cell">
-                          <div className="projects-project-icon">
-                            <FolderKanban size={18} />
+                  {filteredProjects.map((project) => {
+                    const isUpdating = updatingKey?.startsWith(
+                      `${project.slug}:`
+                    );
+                    const isDeleting = deletingSlug === project.slug;
+                    const isBusy = Boolean(updatingKey) || Boolean(deletingSlug);
+
+                    return (
+                      <tr key={project.id}>
+                        <td>
+                          <div className="projects-name-cell">
+                            <div className="projects-project-icon">
+                              <FolderKanban size={18} />
+                            </div>
+
+                            <div className="projects-name-details">
+                              <strong>{project.title}</strong>
+                              <span>/{project.slug}</span>
+                            </div>
                           </div>
+                        </td>
 
-                          <div className="projects-name-details">
-                            <strong>{project.title}</strong>
-                            <span>/{project.slug}</span>
-                          </div>
-                        </div>
-                      </td>
+                        <td>
+                          <span className="projects-category">
+                            {project.category}
+                          </span>
+                        </td>
 
-                      <td>
-                        <span className="projects-category">
-                          {project.category}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span
-                          className={`projects-status ${
-                            project.published ? "published" : "draft"
-                          }`}
-                        >
-                          {project.published ? (
-                            <CheckCircle2 size={13} />
-                          ) : (
-                            <XCircle size={13} />
-                          )}
-
-                          {project.published ? "Published" : "Draft"}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span
-                          className={`projects-featured ${
-                            project.featured ? "is-featured" : ""
-                          }`}
-                        >
-                          <Star
-                            size={14}
-                            fill={
-                              project.featured ? "currentColor" : "none"
-                            }
-                          />
-
-                          {project.featured ? "Featured" : "—"}
-                        </span>
-                      </td>
-
-                      <td className="projects-order-cell">
-                        {project.display_order}
-                      </td>
-
-                      <td>
-                        <div className="projects-row-actions">
-                          <Link
-                            to={`/admin/projects/${encodeURIComponent(
-                              project.slug
-                            )}/edit`}
-                            className="projects-icon-action"
-                            aria-label={`Edit ${project.title}`}
-                            title="Edit project"
+                        <td>
+                          <span
+                            className={`projects-status ${
+                              project.published ? "published" : "draft"
+                            }`}
                           >
-                            <Pencil size={16} />
-                          </Link>
-
-                          {project.published && (
-                            <a
-                              href="/#work"
-                              target="_blank"
-                              rel="noreferrer"
-                              className="projects-icon-action"
-                              aria-label={`View ${project.title} on portfolio`}
-                              title="Open portfolio"
-                            >
-                              <ArrowUpRight size={17} />
-                            </a>
-                          )}
-
-                          <button
-                            type="button"
-                            className="projects-icon-action projects-delete-action"
-                            onClick={() => handleDelete(project)}
-                            disabled={deletingSlug === project.slug}
-                            aria-label={`Delete ${project.title}`}
-                            title="Delete project"
-                          >
-                            {deletingSlug === project.slug ? (
-                              <RefreshCw
-                                size={16}
-                                className="is-spinning"
-                              />
+                            {project.published ? (
+                              <CheckCircle2 size={13} />
                             ) : (
-                              <Trash2 size={16} />
+                              <XCircle size={13} />
                             )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+
+                            {project.published ? "Published" : "Draft"}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span
+                            className={`projects-featured ${
+                              project.featured ? "is-featured" : ""
+                            }`}
+                          >
+                            <Star
+                              size={14}
+                              fill={
+                                project.featured ? "currentColor" : "none"
+                              }
+                            />
+
+                            {project.featured ? "Featured" : "—"}
+                          </span>
+                        </td>
+
+                        <td className="projects-order-cell">
+                          {project.display_order}
+                        </td>
+
+                        <td>
+                          <div className="projects-row-actions">
+                            <button
+                              type="button"
+                              className="projects-icon-action"
+                              onClick={() =>
+                                handleQuickUpdate(project, "published")
+                              }
+                              disabled={isBusy || loading}
+                              aria-label={
+                                project.published
+                                  ? `Unpublish ${project.title}`
+                                  : `Publish ${project.title}`
+                              }
+                              title={
+                                project.published
+                                  ? "Move to drafts"
+                                  : "Publish project"
+                              }
+                            >
+                              {updatingKey ===
+                              `${project.slug}:published` ? (
+                                <RefreshCw
+                                  size={16}
+                                  className="is-spinning"
+                                />
+                              ) : project.published ? (
+                                <EyeOff size={16} />
+                              ) : (
+                                <Eye size={16} />
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="projects-icon-action"
+                              onClick={() =>
+                                handleQuickUpdate(project, "featured")
+                              }
+                              disabled={isBusy || loading}
+                              aria-label={
+                                project.featured
+                                  ? `Unfeature ${project.title}`
+                                  : `Feature ${project.title}`
+                              }
+                              title={
+                                project.featured
+                                  ? "Remove featured status"
+                                  : "Mark as featured"
+                              }
+                            >
+                              {updatingKey ===
+                              `${project.slug}:featured` ? (
+                                <RefreshCw
+                                  size={16}
+                                  className="is-spinning"
+                                />
+                              ) : (
+                                <Star
+                                  size={16}
+                                  fill={
+                                    project.featured ? "currentColor" : "none"
+                                  }
+                                />
+                              )}
+                            </button>
+
+                            <Link
+                              to={`/admin/projects/${encodeURIComponent(
+                                project.slug
+                              )}/edit`}
+                              className="projects-icon-action"
+                              aria-label={`Edit ${project.title}`}
+                              title="Edit project"
+                            >
+                              <Pencil size={16} />
+                            </Link>
+
+                            {project.published && (
+                              <a
+                                href="/#work"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="projects-icon-action"
+                                aria-label={`View ${project.title} on portfolio`}
+                                title="Open portfolio"
+                              >
+                                <ArrowUpRight size={17} />
+                              </a>
+                            )}
+
+                            <button
+                              type="button"
+                              className="projects-icon-action projects-delete-action"
+                              onClick={() => handleDelete(project)}
+                              disabled={isBusy || loading}
+                              aria-label={`Delete ${project.title}`}
+                              title="Delete project"
+                            >
+                              {isDeleting ? (
+                                <RefreshCw
+                                  size={16}
+                                  className="is-spinning"
+                                />
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
+                            </button>
+                          </div>
+
+                          {isUpdating && (
+                            <span className="projects-action-progress">
+                              Saving…
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
