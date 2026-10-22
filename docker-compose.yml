@@ -64,4 +64,4 @@ services:
 
 volumes:
   portfolio_postgres_data:
-    name: portfolio_postgres_data
+    name: developerportfolio_portfolio_postgres_data
