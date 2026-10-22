@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -29,6 +29,8 @@ const FILTERS = [
 
 export default function AdminProjects() {
   const { token } = useAdminAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState("");
@@ -36,7 +38,9 @@ export default function AdminProjects() {
   const [loading, setLoading] = useState(true);
   const [deletingSlug, setDeletingSlug] = useState(null);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(
+    () => location.state?.notice || ""
+  );
 
   const loadProjects = useCallback(async () => {
     if (!token) return;
@@ -57,6 +61,22 @@ export default function AdminProjects() {
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
+
+  // Display success messages passed from the create/edit form.
+  // Clear the history state to prevent the same message returning
+  // when the projects page is refreshed.
+  useEffect(() => {
+    const message = location.state?.notice;
+
+    if (!message) return;
+
+    setNotice(message);
+
+    navigate(location.pathname, {
+      replace: true,
+      state: null,
+    });
+  }, [location.pathname, location.state, navigate]);
 
   const filteredProjects = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -94,9 +114,11 @@ export default function AdminProjects() {
 
     try {
       await deleteProject(token, project.slug);
+
       setProjects((current) =>
         current.filter((item) => item.slug !== project.slug)
       );
+
       setNotice(`"${project.title}" was deleted successfully.`);
     } catch (err) {
       setError(err.message || "Unable to delete this project.");
@@ -134,15 +156,23 @@ export default function AdminProjects() {
         <div className="projects-heading">
           <div>
             <span className="projects-eyebrow">
-              <FolderKanban size={14} /> CONTENT MANAGEMENT
+              <FolderKanban size={14} />
+              CONTENT MANAGEMENT
             </span>
-            <h1>Projects<span>.</span></h1>
+
+            <h1>
+              Projects<span>.</span>
+            </h1>
+
             <p>
               Manage your work, publication status, and featured projects.
             </p>
           </div>
 
-          <Link to="/admin/projects/new" className="projects-create-button">
+          <Link
+            to="/admin/projects/new"
+            className="projects-create-button"
+          >
             <CirclePlus size={17} />
             New project
           </Link>
@@ -153,14 +183,17 @@ export default function AdminProjects() {
             <span>Total projects</span>
             <strong>{counts.all}</strong>
           </div>
+
           <div className="projects-summary-card">
             <span>Published</span>
             <strong>{counts.published}</strong>
           </div>
+
           <div className="projects-summary-card">
             <span>Drafts</span>
             <strong>{counts.drafts}</strong>
           </div>
+
           <div className="projects-summary-card">
             <span>Featured</span>
             <strong>{counts.featured}</strong>
@@ -168,9 +201,13 @@ export default function AdminProjects() {
         </div>
 
         {error && (
-          <div className="projects-message projects-message-error" role="alert">
+          <div
+            className="projects-message projects-message-error"
+            role="alert"
+          >
             <XCircle size={17} />
             <span>{error}</span>
+
             <button type="button" onClick={loadProjects}>
               Retry
             </button>
@@ -178,9 +215,21 @@ export default function AdminProjects() {
         )}
 
         {notice && (
-          <div className="projects-message projects-message-success" role="status">
+          <div
+            className="projects-message projects-message-success"
+            role="status"
+          >
             <CheckCircle2 size={17} />
-            {notice}
+            <span>{notice}</span>
+
+            <button
+              type="button"
+              onClick={() => setNotice("")}
+              aria-label="Dismiss success message"
+              title="Dismiss notification"
+            >
+              <XCircle size={16} />
+            </button>
           </div>
         )}
 
@@ -188,6 +237,7 @@ export default function AdminProjects() {
           <div className="projects-toolbar">
             <div className="projects-search">
               <Search size={17} />
+
               <input
                 type="search"
                 aria-label="Search projects"
@@ -200,12 +250,18 @@ export default function AdminProjects() {
             <button
               type="button"
               className="projects-refresh-button"
-              onClick={loadProjects}
+              onClick={() => {
+                setNotice("");
+                loadProjects();
+              }}
               disabled={loading}
               aria-label="Refresh projects"
               title="Refresh projects"
             >
-              <RefreshCw size={16} className={loading ? "is-spinning" : ""} />
+              <RefreshCw
+                size={16}
+                className={loading ? "is-spinning" : ""}
+              />
             </button>
           </div>
 
@@ -216,6 +272,7 @@ export default function AdminProjects() {
                 type="button"
                 className={filter === item.value ? "active" : ""}
                 onClick={() => setFilter(item.value)}
+                aria-pressed={filter === item.value}
               >
                 {item.label}
                 <span>{counts[item.value]}</span>
@@ -231,15 +288,26 @@ export default function AdminProjects() {
           ) : filteredProjects.length === 0 ? (
             <div className="projects-empty-state">
               <FolderKanban size={28} />
-              <h2>{projects.length ? "No matching projects" : "No projects yet"}</h2>
+
+              <h2>
+                {projects.length
+                  ? "No matching projects"
+                  : "No projects yet"}
+              </h2>
+
               <p>
                 {projects.length
                   ? "Try a different search or filter."
                   : "Create your first project to get started."}
               </p>
+
               {projects.length === 0 && (
-                <Link to="/admin/projects/new" className="projects-create-button">
-                  <CirclePlus size={16} /> Create project
+                <Link
+                  to="/admin/projects/new"
+                  className="projects-create-button"
+                >
+                  <CirclePlus size={16} />
+                  Create project
                 </Link>
               )}
             </div>
@@ -265,6 +333,7 @@ export default function AdminProjects() {
                           <div className="projects-project-icon">
                             <FolderKanban size={18} />
                           </div>
+
                           <div className="projects-name-details">
                             <strong>{project.title}</strong>
                             <span>/{project.slug}</span>
@@ -289,6 +358,7 @@ export default function AdminProjects() {
                           ) : (
                             <XCircle size={13} />
                           )}
+
                           {project.published ? "Published" : "Draft"}
                         </span>
                       </td>
@@ -301,8 +371,11 @@ export default function AdminProjects() {
                         >
                           <Star
                             size={14}
-                            fill={project.featured ? "currentColor" : "none"}
+                            fill={
+                              project.featured ? "currentColor" : "none"
+                            }
                           />
+
                           {project.featured ? "Featured" : "—"}
                         </span>
                       </td>
@@ -314,7 +387,9 @@ export default function AdminProjects() {
                       <td>
                         <div className="projects-row-actions">
                           <Link
-                            to={`/admin/projects/${encodeURIComponent(project.slug)}/edit`}
+                            to={`/admin/projects/${encodeURIComponent(
+                              project.slug
+                            )}/edit`}
                             className="projects-icon-action"
                             aria-label={`Edit ${project.title}`}
                             title="Edit project"
@@ -324,11 +399,11 @@ export default function AdminProjects() {
 
                           {project.published && (
                             <a
-                              href={`/#${encodeURIComponent("work")}`}
+                              href="/#work"
                               target="_blank"
                               rel="noreferrer"
                               className="projects-icon-action"
-                              aria-label="Open portfolio"
+                              aria-label={`View ${project.title} on portfolio`}
                               title="Open portfolio"
                             >
                               <ArrowUpRight size={17} />
@@ -344,7 +419,10 @@ export default function AdminProjects() {
                             title="Delete project"
                           >
                             {deletingSlug === project.slug ? (
-                              <RefreshCw size={16} className="is-spinning" />
+                              <RefreshCw
+                                size={16}
+                                className="is-spinning"
+                              />
                             ) : (
                               <Trash2 size={16} />
                             )}
