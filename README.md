@@ -377,7 +377,7 @@ Potential improvements include:
 
 Software Engineering student interested in full-stack development and building practical software applications.
 
-- GitHub: [@prem231631](https://github.com/prem231631)
+- GitHub: [@prem231631](https://github.com/prem231631/Portfolio)
 
 ---
 
